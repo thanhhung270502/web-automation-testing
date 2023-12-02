@@ -29,12 +29,14 @@ public class Main {
         System.out.printf("| %-30s | %-15s | %-15s | %-15s |\n", testcase, got, expected, result);
         System.out.println("|--------------------------------|-----------------|-----------------|-----------------|");
     }
+
     public static void login(WebDriver driver, String username, String password) throws InterruptedException {
         String baseUrl = "https://sandbox.moodledemo.net/login/index.php?lang=en";
 
 //      launch and direct it to the Base URL
         driver.get(baseUrl);
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        Thread.sleep(3000);
+//        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
         WebElement userElement = driver.findElement(By.name("username"));
         WebElement passwordElement = driver.findElement(By.name("password"));
@@ -56,32 +58,30 @@ public class Main {
 //        System.out.println("Login successfully");
     }
 
-    public static void editUserProfile(WebDriver driver, String firstName, String lastName, String email, String expected) {
-        System.out.println(email);
+    public static void editUserProfileBoundary(WebDriver driver, String stt, String firstName, String lastName,
+                                               String email, String expected) throws InterruptedException {
         String baseUrl = "https://sandbox.moodledemo.net/user/edit.php?id=4&returnto=profile";
         driver.get(baseUrl);
-        String result = "";
+        Thread.sleep(3000);
+
+        try {
+            WebElement cancelEmail = driver.findElement(By.linkText("Cancel email change"));
+            cancelEmail.click();
+            Thread.sleep(3000);
+        } catch(Exception e) {}
 
         WebElement firstNameInput = driver.findElement(By.name("firstname"));
-        System.out.println("Enter first name");
         firstNameInput.clear();
-//        firstNameInput.sendKeys(firstName);
 
         WebElement lastNameInput = driver.findElement(By.name("lastname"));
-        System.out.println("Enter last name");
         lastNameInput.clear();
-//        lastNameInput.sendKeys(lastName);
 
         WebElement emailInput = driver.findElement(By.id("id_email"));
-        System.out.println("Enter email");
         emailInput.clear();
-//        emailInput.sendKeys(email);
 
         WebElement page = driver.findElement(By.id("page"));
 
         WebElement updateButton = driver.findElement(By.name("submitbutton"));
-        System.out.println("Click Update");
-//        updateButton.click();
 
         Actions action = new Actions(driver);
         action
@@ -99,24 +99,139 @@ public class Main {
         action.perform();
         action.release();
 
+        Thread.sleep(3000);
+
+        String got = "";
 //        Error
         try {
             WebElement errorFirstName = driver.findElement(By.id("id_error_firstname"));
-            System.out.println(errorFirstName.getText());
-            result = "failure";
+            got = "failure";
         } catch(Exception e) {
-            result = "success";
+            got = "success";
         };
 
-//        System.out.println("");
-        if (result.equals(expected)) {
-            System.out.println("Test passed: Got: " + result + ", Expected: " + expected);
-        }
-        else {
-            System.out.println("Test failed: Got: " + result + ", Expected: " + expected);
-        }
-        System.out.println("Update successfully");
+        String result = "";
+        if (got.equals(expected)) result = "Passed";
+        else result = "Failed";
+        printTestResult(stt, got, expected, result);
     }
+
+    public static void testEditUserProfileBoundary(WebDriver driver) throws IOException {
+        String path = "src/dataset/datasetEditBoundary.csv";
+
+        File file = new File(path);
+
+        Integer index = 0;
+        String line = "";
+        printTableHeader();
+        try(BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            while((line = reader.readLine()) != null && !line.isEmpty()) {
+                String[] fields = line.split(",");
+                editUserProfileBoundary(driver, fields[0], fields[1], fields[2], fields[3], fields[4]);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void editUserProfileEquivalent(WebDriver driver, String stt, String firstName, String lastName,
+                                                 String email, String moodleNetProfile, String city, String expected)
+            throws InterruptedException {
+        String baseUrl = "https://sandbox.moodledemo.net/user/edit.php?id=4&returnto=profile";
+        driver.get(baseUrl);
+        Thread.sleep(3000);
+
+        try {
+            WebElement cancelEmail = driver.findElement(By.linkText("Cancel email change"));
+            cancelEmail.click();
+            Thread.sleep(3000);
+        } catch(Exception e) {}
+
+        WebElement firstNameInput = driver.findElement(By.name("firstname"));
+        firstNameInput.clear();
+
+        WebElement lastNameInput = driver.findElement(By.name("lastname"));
+        lastNameInput.clear();
+
+        WebElement emailInput = driver.findElement(By.id("id_email"));
+        emailInput.clear();
+
+        WebElement moodleNetProfileInput = driver.findElement(By.id("id_moodlenetprofile"));
+        moodleNetProfileInput.clear();
+
+        WebElement cityInput = driver.findElement(By.id("id_city"));
+        cityInput.clear();
+
+//        id_city
+
+        WebElement page = driver.findElement(By.id("page"));
+
+        WebElement updateButton = driver.findElement(By.name("submitbutton"));
+
+        Actions action = new Actions(driver);
+        action
+                .click(lastNameInput)
+                .sendKeys(lastName)
+                .click(firstNameInput)
+                .sendKeys(firstName)
+                .click(emailInput)
+                .sendKeys(email)
+                .click(moodleNetProfileInput)
+                .sendKeys(moodleNetProfile)
+                .click(cityInput)
+                .sendKeys(city)
+                .pause(2)
+                .click(page)
+                .pause(2)
+        ;
+
+        action.click(updateButton);
+        action.perform();
+        action.release();
+
+        Thread.sleep(3000);
+
+        String got = "success";
+//        Error
+        try {
+            WebElement errorFirstName = driver.findElement(By.id("id_error_firstname"));
+            if (errorFirstName.isDisplayed()) got = "failure";
+
+            WebElement errorLastName = driver.findElement(By.id("id_error_lastname"));
+            if (errorLastName.isDisplayed()) got = "failure";
+
+            WebElement errorEmail = driver.findElement(By.id("id_error_email"));
+            if (errorEmail.isDisplayed()) got = "failure";
+        } catch(Exception e) {
+            got = "success";
+        };
+
+        String result = "";
+        if (got.equals(expected)) result = "Passed";
+        else result = "Failed";
+        printTestResult(stt, got, expected, result);
+    }
+
+    public static void testEditUserProfileEquivalent(WebDriver driver) throws IOException {
+        String path = "src/dataset/datasetEditEquivalent.csv";
+
+        File file = new File(path);
+
+        Integer index = 0;
+        String line = "";
+        printTableHeader();
+        try(BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            line = reader.readLine();
+            while((line = reader.readLine()) != null && !line.isEmpty()) {
+                String[] fields = line.split(",");
+                editUserProfileEquivalent(driver, fields[0], fields[1], fields[2], fields[3], fields[4], fields[5],
+                        fields[6]);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     public static void createEvent(WebDriver driver, String stt, String title, String day, String show, String location,
                                    String duration, String repeatTime, String expected) throws InterruptedException {
@@ -257,18 +372,19 @@ public class Main {
         WebDriver driver = new ChromeDriver();
 
         login(driver, USERNAME, PASSWORD);
-//        editUserProfile(driver, FIRSTNAME, LASTNAME, EMAIL, "success");
+//        editUserProfileBoundary(driver, d"Test 1", FIRSTNAME, LASTNAME, EMAIL, "success");
 
-        String TITLE = "abc";
-        String DAY = "2";
-        Boolean SHOW = true;
-        String LOCATION = "VietNam";
-        String DURATION = "24/12";
-        Boolean ISREPEAT = true;
-        String REPEATTIME = "3";
+//        String TITLE = "abc";
+//        String DAY = "2";
+//        Boolean SHOW = true;
+//        String LOCATION = "VietNam";
+//        String DURATION = "24/12";
+//        Boolean ISREPEAT = true;
+//        String REPEATTIME = "3";
 //        createEvent(driver, TITLE, DAY, SHOW, LOCATION, DURATION, ISREPEAT, REPEATTIME, "success");
-        testCreateNewCalendarEvent(driver);
-
+//        testCreateNewCalendarEvent(driver);
+//        testEditUserProfileBoundary(driver);
+        testEditUserProfileEquivalent(driver);
 
 //        driver.close();
     }

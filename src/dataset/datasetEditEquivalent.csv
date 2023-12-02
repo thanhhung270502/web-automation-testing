@@ -1,0 +1,11 @@
+STT,FirstName,LastName,Email,MoodleNet profile ID,City/town,Expected
+Test 1,Hùng,Lý,hung@gmail.com,1234,Soc Trang,success
+Test 2,,Lý,hung@gmail.com,1234,Soc Trang,failure
+Test 3,Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry,Lý,hung@gmail.com,1234,Soc Trang,success
+Test 4,Hùng,,hung@gmail.com,1234,Soc Trang,failure
+Test 5,Hùng,Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry,hung@gmail.com,1234,Soc Trang,success
+Test 6,Hùng,Lý,,1234,Soc Trang,failure
+Test 7,Hùng,Lý,LoremIpsumisSimplydummytextoftheprintingandtypesettingindustryLoremIpsumhasbeentheindustrystandard@gmail.com,1234,Soc Trang,failure
+Test 8,Hùng,Lý,hung@gmail,1234,Soc Trang,failure
+Test 9,Hùng,Lý,hung@gmail.com,Lorems Ipsums is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been theLorems Ipsums is siLorems Ipsums is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been theLorems Ipsums is siLorems Ipsums is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been theLorems Ipsums is si,Soc Trang,success
+Test 10,Hùng,Lý,hung@gmail.com,1234,Lorems Ipsums is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been theLorems Ipsums is sii,success
