@@ -5,6 +5,13 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.Select;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import java.time.Duration;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -12,32 +19,44 @@ import java.util.regex.Pattern;
 //import org.openqa.selenium.interactions.
 
 public class Main {
-    public static void login(WebDriver driver, String username, String password) {
+    public static void printTableHeader() {
+        System.out.println("|--------------------------------|-----------------|-----------------|-----------------|");
+        System.out.println("| Testcase                       | Got             | Expected        | Result          |");
+        System.out.println("|--------------------------------|-----------------|-----------------|-----------------|");
+    }
+
+    public static void printTestResult(String testcase, String got, String expected, String result) {
+        System.out.printf("| %-30s | %-15s | %-15s | %-15s |\n", testcase, got, expected, result);
+        System.out.println("|--------------------------------|-----------------|-----------------|-----------------|");
+    }
+    public static void login(WebDriver driver, String username, String password) throws InterruptedException {
         String baseUrl = "https://sandbox.moodledemo.net/login/index.php?lang=en";
 
 //      launch and direct it to the Base URL
         driver.get(baseUrl);
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
 
         WebElement userElement = driver.findElement(By.name("username"));
         WebElement passwordElement = driver.findElement(By.name("password"));
         WebElement submitElement = driver.findElement(By.id("loginbtn"));
 
 //      Input username
-        System.out.println("Enter username");
+//        System.out.println("Enter username");
         userElement.sendKeys(username);
 
 //      Input password
-        System.out.println("Enter password");
+//        System.out.println("Enter password");
         passwordElement.sendKeys(password);
 
 //      Click login
-        System.out.println("Click login");
+//        System.out.println("Click login");
         submitElement.click();
+        Thread.sleep(3000);
 
-        System.out.println("Login successfully");
+//        System.out.println("Login successfully");
     }
 
-    public static void editProfile(WebDriver driver, String firstName, String lastName, String email, String expected) {
+    public static void editUserProfile(WebDriver driver, String firstName, String lastName, String email, String expected) {
         System.out.println(email);
         String baseUrl = "https://sandbox.moodledemo.net/user/edit.php?id=4&returnto=profile";
         driver.get(baseUrl);
@@ -99,33 +118,34 @@ public class Main {
         System.out.println("Update successfully");
     }
 
-    public static void createEvent(WebDriver driver, String title, String day, Boolean show, String location,
-                                   String duration, Boolean isRepeated, String repeatTime, String expected) {
+    public static void createEvent(WebDriver driver, String stt, String title, String day, String show, String location,
+                                   String duration, String repeatTime, String expected) throws InterruptedException {
         String baseUrl = "https://sandbox.moodledemo.net/calendar/view.php?view=month";
 
 //      launch and direct it to the Base URL
         driver.get(baseUrl);
-        Actions action = new Actions(driver);
+        Thread.sleep(3000);
 
 //      Setup: Open event-modal
         WebElement newEvent = driver.findElement(By.cssSelector("[data-action='new-event-button']"));
         newEvent.click();
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        Thread.sleep(3000);
 
 //      Title
         WebElement titleInput = driver.findElement(By.xpath("//*[@id=\"id_name\"]"));
-        System.out.println(titleInput);
         titleInput.sendKeys(title);
 
 //      Date
-        Select daySelect = new Select(driver.findElement(By.id("id_timestart_day")));
-        daySelect.selectByValue(day);
+        if (!day.equals("0")) {
+            Select daySelect = new Select(driver.findElement(By.id("id_timestart_day")));
+            daySelect.selectByValue(day);
+        }
 
 //      Show more
-        if (show) {
+        if (show.equals("TRUE")) {
 //          Click show more
             driver.findElement(By.className("moreless-toggler")).click();
-            driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+            Thread.sleep(3000);
 
 //          Location
             driver.findElement(By.id("id_location")).sendKeys(location);
@@ -143,14 +163,12 @@ public class Main {
 
                 // Kiểm tra xem duration có khớp với biểu thức chính quy không
                 if (matcher.matches()) {
-                    System.out.println("Biến duration đúng định dạng.");
 //                  Until
                     driver.findElement(By.id("id_duration_1")).click();
 
                     String[] arr = duration.split("/");
                     String durationDayValue = arr[0];
                     String durationMonthValue = arr[1];
-                    System.out.println(durationMonthValue);
 
                     Select durationDaySelect = new Select(driver.findElement(By.id("id_timedurationuntil_day")));
 //                  handle convert day
@@ -173,7 +191,6 @@ public class Main {
 
                 }
                 else {
-                    System.out.println("Biến duration không đúng định dạng.");
                     driver.findElement(By.id("id_duration_2")).click();
 
                     WebElement timeDurationMinutes = driver.findElement(By.id("id_timedurationminutes"));
@@ -182,7 +199,7 @@ public class Main {
             }
 
 //          Is repeat clicked?
-            if (isRepeated) {
+            if (!repeatTime.equals("0")) {
                 driver.findElement(By.id("id_repeat")).click();
 
                 WebElement repeatInput = driver.findElement(By.id("id_repeats"));
@@ -193,25 +210,42 @@ public class Main {
 //      Save
         WebElement submitButton = driver.findElement(By.cssSelector("[data-action='save']"));
         submitButton.click();
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
+        Thread.sleep(5000);
+//        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10000));
+
+        String got = "success";
+
+        WebElement errorTitle = driver.findElement(By.id("id_error_name"));
+        if (errorTitle.isDisplayed()) got = "failure";
+
+        WebElement errorFGroup = driver.findElement(By.id("fgroup_id_error_durationgroup"));
+        if (errorFGroup.isDisplayed()) got = "failure";
 
         String result = "";
-        try {
-            WebElement errorTitle = driver.findElement(By.id("id_error_name"));
-            result = "failure";
-        } catch(Exception e) {
-            result = "success";
-        }
+        if (got.equals(expected)) result = "Passed";
+        else result = "Failed";
+        printTestResult(stt, got, expected, result);
+    }
 
-        if (result.equals(expected)) {
-            System.out.println("Test passed: Got: " + result + ", Expected: " + expected);
-        }
-        else {
-            System.out.println("Test failed: Got: " + result + ", Expected: " + expected);
+    public static void testCreateNewCalendarEvent(WebDriver driver) throws IOException {
+        String path = "src/dataset/datasetEvent.csv";
+
+        File file = new File(path);
+
+        Integer index = 0;
+        String line = "";
+        printTableHeader();
+        try(BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            while((line = reader.readLine()) != null && !line.isEmpty()) {
+                String[] fields = line.split(",");
+                createEvent(driver, fields[0], fields[1], fields[2], fields[3], fields[4], fields[5], fields[6], fields[7]);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("Starting");
 
         String USERNAME = "student";
@@ -223,7 +257,7 @@ public class Main {
         WebDriver driver = new ChromeDriver();
 
         login(driver, USERNAME, PASSWORD);
-//        editProfile(driver, FIRSTNAME, LASTNAME, EMAIL, "success");
+//        editUserProfile(driver, FIRSTNAME, LASTNAME, EMAIL, "success");
 
         String TITLE = "abc";
         String DAY = "2";
@@ -232,8 +266,8 @@ public class Main {
         String DURATION = "24/12";
         Boolean ISREPEAT = true;
         String REPEATTIME = "3";
-        createEvent(driver, TITLE, DAY, SHOW, LOCATION, DURATION, ISREPEAT, REPEATTIME, "success");
-
+//        createEvent(driver, TITLE, DAY, SHOW, LOCATION, DURATION, ISREPEAT, REPEATTIME, "success");
+        testCreateNewCalendarEvent(driver);
 
 
 //        driver.close();
